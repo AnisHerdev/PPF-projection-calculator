@@ -29,7 +29,7 @@ ppf_amount = left_column.number_input(
     max_value=1_000_000,
     value=100_000,
     step=1_000,
-    help="Enter the initial amount you already have in your PPF account."
+    help="Enter the initial lump sum deposit for your PPF account."
 )
 monthly_investment = left_column.number_input(
     label="Enter the Monthly Investment",
@@ -72,3 +72,20 @@ st.write("Total investment:", duration*12*monthly_investment+ppf_amount)
 st.write("Estimated maturity value:", st.session_state.total_amount)
 st.write("Total interest earned:", st.session_state.interest)
 st.dataframe(st.session_state.projection)
+
+with st.expander("Important Information about PPF"):
+    st.markdown("""
+    ### Why invest before the 5th?
+    Interest in a PPF account is calculated on the **lowest balance** between the 5th and the last day of the month. 
+    If you deposit after the 5th, you lose interest on that deposit for the entire month. 
+    To maximize returns, always deposit on or before the 5th.
+
+    ### Key Rules
+    - **Interest Rate**: Currently 7.1% p.a. (subject to quarterly revision by the Govt).
+    - **Investment Limits**: Minimum ₹500, Maximum ₹1.5 Lakh per financial year.
+    - **Lock-in Period**: 15 years. Partial withdrawals allowed after 5 years.
+    - **Tax Benefits**: EEE Status - Principal, Interest, and Maturity amount are all tax-free.
+    - **Compounding**: Interest is calculated monthly but compounded annually.
+
+    > **Note**: This calculator projects returns based on the current interest rate and does not account for **inflation**. The real value of the maturity amount may be lower in terms of purchasing power.
+    """)
