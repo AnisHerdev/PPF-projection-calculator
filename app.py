@@ -1,8 +1,23 @@
 import streamlit as st
 
-def calculate(ppf_amount, rate_of_interest, duration):
-    interest = ppf_amount * (rate_of_interest/100) * (duration/12)
-    return (interest + ppf_amount, interest)
+def calculate(ppf_amount, rate_of_interest, duration, monthly_investment):
+    lifetime_interest=0
+    total_interest_yearly = 0
+    projection={"Month":[],"Interest":[],"Amount_in_account":[]}
+    for i in range(duration*12):
+        ppf_amount += monthly_investment
+        interest = round(ppf_amount * (rate_of_interest/1200),2)
+        total_interest_yearly += interest
+        lifetime_interest += interest
+        
+        if (i+1)%12==0:
+            ppf_amount+=total_interest_yearly
+            total_interest_yearly=0
+        projection["Month"].append(i+1)
+        projection["Amount_in_account"].append(ppf_amount)
+        projection["Interest"].append(interest)
+        
+    return (ppf_amount, lifetime_interest, projection)
 
 st.header("PPF Projection Calculator")
 
@@ -24,6 +39,9 @@ monthly_investment = left_column.number_input(
     step=1_000,
     help="Enter the amount you want to invest monthly in your PPF account."
 )
+left_column.caption("Note: This calculation assumes investment is made before the 5th of every month.")
+if monthly_investment * 12 > 150000:
+    st.warning("Note: Maximum investment in PPF is ₹1.5 Lakhs per year.")
 rate_of_interest = right_column.number_input(
     label="Enter your Rate of Interest",
     min_value=0.0,
@@ -32,27 +50,25 @@ rate_of_interest = right_column.number_input(
     step=0.1,
     help="Enter the rate of interest for your PPF account."
 )
-duration_unit = right_column.radio("Select Duration Unit", ["Months", "Years"])
 
 duration = right_column.number_input(
-    label=f"Enter your Duration (in {duration_unit})",
+    label=f"Enter your Duration (in Years)",
     min_value=0,
     max_value=100,
-    value=12 if duration_unit == "Months" else 1,
+    value=15,
     step=1,
     help="Enter the duration for your PPF account."
 )
-
-if duration_unit == "Years":
-    duration_in_months = duration * 12
-else:
-    duration_in_months = duration
+if duration<15:
+    st.error("Duration should be a minimum of 15 years")
 
 if "projection" not in st.session_state:
-    st.session_state.projection, st.session_state.interest = calculate(ppf_amount, rate_of_interest, duration_in_months)
+    st.session_state.total_amount, st.session_state.interest, st.session_state.projection = calculate(ppf_amount, rate_of_interest, duration, monthly_investment)
 
 if st.columns(7)[3].button("Calculate"):
-    st.session_state.projection, st.session_state.interest = calculate(ppf_amount, rate_of_interest, duration_in_months)
+    st.session_state.total_amount, st.session_state.interest, st.session_state.projection = calculate(ppf_amount, rate_of_interest, duration, monthly_investment)
 
-st.write("Your PPF projection is:", st.session_state.projection)
-st.write("Your PPF interest is:", st.session_state.interest)
+st.write("Total investment:", duration*12*monthly_investment+ppf_amount)
+st.write("Estimated maturity value:", st.session_state.total_amount)
+st.write("Total interest earned:", st.session_state.interest)
+st.dataframe(st.session_state.projection)
