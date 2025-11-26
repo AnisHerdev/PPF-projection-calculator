@@ -1,23 +1,32 @@
 import streamlit as st
+import pandas as pd
+import plotly.express as px
 
 def calculate(ppf_amount, rate_of_interest, duration, monthly_investment):
     lifetime_interest=0
     total_interest_yearly = 0
-    projection={"Month":[],"Interest":[],"Amount_in_account":[]}
+    projection={"Month":[],"Interest":[],"Amount_in_account":[], "Invested_Amount":[], "Accumulated_Interest":[]}
+    cumulative_investment = ppf_amount
+    
     for i in range(duration*12):
         ppf_amount += monthly_investment
-        interest = round(ppf_amount * (rate_of_interest/1200),2)
+        cumulative_investment += monthly_investment
+        
+        interest = ppf_amount * (rate_of_interest/1200)
         total_interest_yearly += interest
         lifetime_interest += interest
         
         if (i+1)%12==0:
             ppf_amount+=total_interest_yearly
             total_interest_yearly=0
+            
         projection["Month"].append(i+1)
         projection["Amount_in_account"].append(ppf_amount)
         projection["Interest"].append(interest)
+        projection["Invested_Amount"].append(cumulative_investment)
+        projection["Accumulated_Interest"].append(ppf_amount - cumulative_investment)
         
-    return (ppf_amount, lifetime_interest, projection)
+    return (round(ppf_amount,2), round(lifetime_interest,2), projection)
 
 st.header("PPF Projection Calculator")
 
@@ -65,13 +74,43 @@ if duration<15:
 if "projection" not in st.session_state:
     st.session_state.total_amount, st.session_state.interest, st.session_state.projection = calculate(ppf_amount, rate_of_interest, duration, monthly_investment)
 
+# st.markdown("""
+# <style>
+# div.stButton > button:first-child {
+#     background-color: #4CAF50; /* Green */
+#     color: white;
+# }
+# </style>""", unsafe_allow_html=True)
 if st.columns(7)[3].button("Calculate"):
+    st.session_state.total_amount, st.session_state.interest, st.session_state.projection = calculate(ppf_amount, rate_of_interest, duration, monthly_investment)
     st.session_state.total_amount, st.session_state.interest, st.session_state.projection = calculate(ppf_amount, rate_of_interest, duration, monthly_investment)
 
 st.write("Total investment:", duration*12*monthly_investment+ppf_amount)
 st.write("Estimated maturity value:", st.session_state.total_amount)
 st.write("Total interest earned:", st.session_state.interest)
+
 st.dataframe(st.session_state.projection)
+# Visualizations
+if st.session_state.projection:
+    df = pd.DataFrame(st.session_state.projection)
+
+    st.subheader("Growth of Investment Over Time")
+    st.area_chart(df, x="Month", y=["Invested_Amount", "Accumulated_Interest"], color=["#1f77b4", "#ff7f0e"])
+
+    st.subheader("Maturity Breakdown")
+    total_invested = duration*12*monthly_investment + ppf_amount
+    total_interest = st.session_state.interest
+    
+    # Check if we have valid data for pie chart
+    if total_invested > 0 or total_interest > 0:
+        fig = px.pie(
+            values=[total_invested, total_interest], 
+            names=["Total Invested", "Total Interest"], 
+            title="Investment vs Interest",
+            color_discrete_sequence=["#1f77b4", "#ff7f0e"]
+        )
+        st.plotly_chart(fig)
+
 
 with st.expander("Important Information about PPF"):
     st.markdown("""
