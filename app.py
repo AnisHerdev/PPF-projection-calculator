@@ -1,16 +1,23 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-
-def calculate(ppf_amount, rate_of_interest, duration, monthly_investment):
+    
+def calculate(ppf_amount, rate_of_interest, duration, investment_amount, frequency):
     lifetime_interest=0
     total_interest_yearly = 0
     projection={"Month":[],"Interest":[],"Amount_in_account":[], "Invested_Amount":[], "Accumulated_Interest":[]}
     cumulative_investment = ppf_amount
     
     for i in range(duration*12):
-        ppf_amount += monthly_investment
-        cumulative_investment += monthly_investment
+        # Add investment based on frequency
+        if frequency == "Monthly":
+            ppf_amount += investment_amount
+            cumulative_investment += investment_amount
+        elif frequency == "Yearly":
+            # Add yearly investment at the start of the financial year (Month 1, 13, 25...)
+            if i % 12 == 0:
+                ppf_amount += investment_amount
+                cumulative_investment += investment_amount
         
         interest = ppf_amount * (rate_of_interest/1200)
         total_interest_yearly += interest
@@ -26,7 +33,7 @@ def calculate(ppf_amount, rate_of_interest, duration, monthly_investment):
         projection["Invested_Amount"].append(cumulative_investment)
         projection["Accumulated_Interest"].append(ppf_amount - cumulative_investment)
         
-    return (round(ppf_amount,2), round(lifetime_interest,2),cumulative_investment , projection)
+    return (round(ppf_amount,2), round(lifetime_interest,2), cumulative_investment, projection)
 
 st.header("PPF Projection Calculator")
 
@@ -40,17 +47,27 @@ ppf_amount = left_column.number_input(
     step=1_000,
     help="Enter the initial lump sum deposit for your PPF account."
 )
-monthly_investment = left_column.number_input(
-    label="Enter the Monthly Investment",
+
+investment_frequency = left_column.radio("Investment Frequency", ["Monthly", "Yearly"])
+
+investment_amount = left_column.number_input(
+    label=f"Enter the {investment_frequency} Investment",
     min_value=0,
     max_value=1_50_000,
-    value=1_000,
+    value=1_000 if investment_frequency == "Monthly" else 12_000,
     step=1_000,
-    help="Enter the amount you want to invest monthly in your PPF account."
+    help=f"Enter the amount you want to invest {investment_frequency.lower()} in your PPF account."
 )
-left_column.caption("Note: This calculation assumes investment is made before the 5th of every month.")
-if monthly_investment * 12 > 150000:
-    st.warning("Note: Maximum investment in PPF is ₹1.5 Lakhs per year.")
+
+if investment_frequency == "Monthly":
+    left_column.caption("Note: This calculation assumes investment is made before the 5th of every month.")
+    if investment_amount * 12 > 150000:
+        st.warning("Note: Maximum investment in PPF is ₹1.5 Lakhs per year.")
+else:
+    left_column.caption("Note: This calculation assumes investment is made before the 5th of April every year.")
+    if investment_amount > 150000:
+        st.warning("Note: Maximum investment in PPF is ₹1.5 Lakhs per year.")
+
 rate_of_interest = right_column.number_input(
     label="Enter your Rate of Interest",
     min_value=0.0,
@@ -72,17 +89,10 @@ if duration<15:
     st.error("Duration should be a minimum of 15 years")
 
 if "projection" not in st.session_state:
-    st.session_state.total_amount, st.session_state.interest, st.session_state.cumulative_investment, st.session_state.projection = calculate(ppf_amount, rate_of_interest, duration, monthly_investment)
+    st.session_state.total_amount, st.session_state.interest, st.session_state.cumulative_investment, st.session_state.projection = calculate(ppf_amount, rate_of_interest, duration, investment_amount, investment_frequency)
 
-# st.markdown("""
-# <style>
-# div.stButton > button:first-child {
-#     background-color: #4CAF50; /* Green */
-#     color: white;
-# }
-# </style>""", unsafe_allow_html=True)
 if st.columns(7)[3].button("Calculate"):
-    st.session_state.total_amount, st.session_state.interest, st.session_state.cumulative_investment, st.session_state.projection = calculate(ppf_amount, rate_of_interest, duration, monthly_investment)
+    st.session_state.total_amount, st.session_state.interest, st.session_state.cumulative_investment, st.session_state.projection = calculate(ppf_amount, rate_of_interest, duration, investment_amount, investment_frequency)
 
 st.write("Total investment:", st.session_state.cumulative_investment)
 st.write("Estimated maturity value:", st.session_state.total_amount)
@@ -97,7 +107,7 @@ if st.session_state.projection:
     st.area_chart(df, x="Month", y=["Invested_Amount", "Accumulated_Interest"], color=["#1f77b4", "#ff7f0e"])
 
     st.subheader("Maturity Breakdown")
-    total_invested = duration*12*monthly_investment + ppf_amount
+    total_invested = st.session_state.cumulative_investment
     total_interest = st.session_state.interest
     
     # Check if we have valid data for pie chart
