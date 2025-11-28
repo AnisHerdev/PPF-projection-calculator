@@ -26,7 +26,7 @@ def calculate(ppf_amount, rate_of_interest, duration, monthly_investment):
         projection["Invested_Amount"].append(cumulative_investment)
         projection["Accumulated_Interest"].append(ppf_amount - cumulative_investment)
         
-    return (round(ppf_amount,2), round(lifetime_interest,2), projection)
+    return (round(ppf_amount,2), round(lifetime_interest,2),cumulative_investment , projection)
 
 st.header("PPF Projection Calculator")
 
@@ -72,7 +72,7 @@ if duration<15:
     st.error("Duration should be a minimum of 15 years")
 
 if "projection" not in st.session_state:
-    st.session_state.total_amount, st.session_state.interest, st.session_state.projection = calculate(ppf_amount, rate_of_interest, duration, monthly_investment)
+    st.session_state.total_amount, st.session_state.interest, st.session_state.cumulative_investment, st.session_state.projection = calculate(ppf_amount, rate_of_interest, duration, monthly_investment)
 
 # st.markdown("""
 # <style>
@@ -82,10 +82,9 @@ if "projection" not in st.session_state:
 # }
 # </style>""", unsafe_allow_html=True)
 if st.columns(7)[3].button("Calculate"):
-    st.session_state.total_amount, st.session_state.interest, st.session_state.projection = calculate(ppf_amount, rate_of_interest, duration, monthly_investment)
-    st.session_state.total_amount, st.session_state.interest, st.session_state.projection = calculate(ppf_amount, rate_of_interest, duration, monthly_investment)
+    st.session_state.total_amount, st.session_state.interest, st.session_state.cumulative_investment, st.session_state.projection = calculate(ppf_amount, rate_of_interest, duration, monthly_investment)
 
-st.write("Total investment:", duration*12*monthly_investment+ppf_amount)
+st.write("Total investment:", st.session_state.cumulative_investment)
 st.write("Estimated maturity value:", st.session_state.total_amount)
 st.write("Total interest earned:", st.session_state.interest)
 
