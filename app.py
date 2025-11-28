@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-    
+
 def calculate(ppf_amount, rate_of_interest, duration, investment_amount, frequency):
     lifetime_interest=0
     total_interest_yearly = 0
@@ -98,10 +98,23 @@ st.write("Total investment:", st.session_state.cumulative_investment)
 st.write("Estimated maturity value:", st.session_state.total_amount)
 st.write("Total interest earned:", st.session_state.interest)
 
-st.dataframe(st.session_state.projection)
+# st.dataframe(st.session_state.projection)
 # Visualizations
 if st.session_state.projection:
+    
     df = pd.DataFrame(st.session_state.projection)
+    st.subheader("Projection Table")
+    breakdown_type = st.radio("View Projection Breakdown", ["Monthly", "Yearly"], horizontal=True)
+    
+    if breakdown_type == "Yearly":
+        # Filter for end of each year (Month 12, 24, 36...)
+        df_display = df[df['Month'] % 12 == 0].copy()
+        df_display['Year'] = df_display['Month'] // 12
+        # Reorder columns to show Year first
+        cols = ['Year'] + [col for col in df_display.columns if col != 'Year']
+        st.dataframe(df_display[cols], hide_index=True)
+    else:
+        st.dataframe(df, hide_index=True)
 
     st.subheader("Growth of Investment Over Time")
     st.area_chart(df, x="Month", y=["Invested_Amount", "Accumulated_Interest"], color=["#1f77b4", "#ff7f0e"])
@@ -119,7 +132,7 @@ if st.session_state.projection:
             color_discrete_sequence=["#1f77b4", "#ff7f0e"]
         )
         st.plotly_chart(fig)
-
+    
 
 with st.expander("Important Information about PPF"):
     st.markdown("""
