@@ -19,7 +19,7 @@ def format_indian_currency(value):
     rest_formatted = ",".join(chunks)[::-1]
     
     return f"₹ {rest_formatted},{last_3}.{decimal_part}"
-    
+
 def calculate(ppf_amount, rate_of_interest, duration, investment_amount, frequency):
     lifetime_interest=0
     total_interest_yearly = 0
@@ -109,7 +109,7 @@ if duration<15:
 if "projection" not in st.session_state:
     st.session_state.total_amount, st.session_state.interest, st.session_state.cumulative_investment, st.session_state.projection = calculate(ppf_amount, rate_of_interest, duration, investment_amount, investment_frequency)
 
-if st.columns(7)[3].button("Calculate"):
+if st.columns([1, 2, 1])[1].button("Calculate", use_container_width=True):
     st.session_state.total_amount, st.session_state.interest, st.session_state.cumulative_investment, st.session_state.projection = calculate(ppf_amount, rate_of_interest, duration, investment_amount, investment_frequency)
 
 
