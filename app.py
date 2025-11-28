@@ -2,6 +2,24 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
+def format_indian_currency(value):
+    value = float(value)
+    s = "{:.2f}".format(value)
+    integer_part, decimal_part = s.split('.')
+    
+    if len(integer_part) <= 3:
+        return f"₹ {integer_part}.{decimal_part}"
+        
+    last_3 = integer_part[-3:]
+    rest = integer_part[:-3]
+    
+    # Insert commas every 2 digits in 'rest' from right to left
+    rest_reversed = rest[::-1]
+    chunks = [rest_reversed[i:i+2] for i in range(0, len(rest_reversed), 2)]
+    rest_formatted = ",".join(chunks)[::-1]
+    
+    return f"₹ {rest_formatted},{last_3}.{decimal_part}"
+    
 def calculate(ppf_amount, rate_of_interest, duration, investment_amount, frequency):
     lifetime_interest=0
     total_interest_yearly = 0
@@ -94,15 +112,16 @@ if "projection" not in st.session_state:
 if st.columns(7)[3].button("Calculate"):
     st.session_state.total_amount, st.session_state.interest, st.session_state.cumulative_investment, st.session_state.projection = calculate(ppf_amount, rate_of_interest, duration, investment_amount, investment_frequency)
 
-st.write("Total investment:", st.session_state.cumulative_investment)
-st.write("Estimated maturity value:", st.session_state.total_amount)
-st.write("Total interest earned:", st.session_state.interest)
 
-# st.dataframe(st.session_state.projection)
+col1, col2, col3 = st.columns(3)
+col1.metric("Total Investment", format_indian_currency(st.session_state.cumulative_investment))
+col2.metric("Maturity Value", format_indian_currency(st.session_state.total_amount))
+col3.metric("Total Interest", format_indian_currency(st.session_state.interest))
+
 # Visualizations
 if st.session_state.projection:
-    
     df = pd.DataFrame(st.session_state.projection)
+    
     st.subheader("Projection Table")
     breakdown_type = st.radio("View Projection Breakdown", ["Monthly", "Yearly"], horizontal=True)
     
@@ -132,7 +151,7 @@ if st.session_state.projection:
             color_discrete_sequence=["#1f77b4", "#ff7f0e"]
         )
         st.plotly_chart(fig)
-    
+
 
 with st.expander("Important Information about PPF"):
     st.markdown("""
